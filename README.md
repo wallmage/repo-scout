@@ -48,7 +48,7 @@ Stars, followers, and README claims never prove implementation quality. Source f
 - **Replies in your language.** Ask in Japanese, get the verdict in Japanese. 中文提问，中文回答.
 - **Recommends the path for your machine.** After the verdict it probes your host read-only — OS, CPU, package manager, installed runtimes — and picks the one way to run it that delivers the full experience in the fewest steps for you, with the one-line command to fill any gap.
 - **Can install it for you, hands-off.** Say yes and it runs the documented setup, narrating each step and installing missing prerequisites with your package manager; where steps are click-only it drives the desktop with computer use when the platform allows, and otherwise hands you a tailored copy-paste manual. It never types your passwords, API keys, or payment details — it stops and tells you what to enter. How far it goes depends on what your platform exposes.
-- **Runs anywhere.** Plain markdown + one stdlib-only Python script. Claude Code, Codex, Kimi Code, OpenCode, Gemini CLI — see [INSTALL.md](INSTALL.md).
+- **Runs anywhere.** Plain markdown + one stdlib-only Python script. Claude Code, Codex, and Gemini CLI have step-by-step paths in [INSTALL.md](INSTALL.md); anything else that reads Agent Skills takes the same copied directory.
 - **Fast by design.** A quick triage sizes the repo and picks a tier, so a verdict lands in under ~10 minutes for regular repos and under ~15 for very large ones. Big trees are split across parallel subagents to speed up the scan. Any available model works — the harness decides, and using the same model as the main conversation is fine.
 - **Never runs the code it judges.** The repo is treated as untrusted data: symlinks are refused, reads are bounded, and anything unread is tracked in the deep-dive notes.
 
@@ -154,7 +154,7 @@ Install this for me: https://github.com/someone/viral-skill   ← gets vetted fi
 - **你用哪种语言问，它就用哪种语言答。** 日语提问，日语回答。中文提问，中文回答。
 - **按你的机器推荐安装路径。** 给出结论后，它会只读探测你的主机——操作系统、CPU、包管理器、已装运行时——然后只推荐一条路径：完整体验、步骤最少，并给出补齐缺失项的一行命令。
 - **可以放手让它替你安装。** 你说一声，它就照文档执行安装，边做边说，用你的包管理器补上缺失的依赖；遇到只能手动点击的步骤，平台允许时用计算机操作替你完成，否则给你一份量身定制、可复制粘贴的手册。它绝不替你输入密码、API 密钥或支付信息——遇到这类步骤就停下，告诉你该填什么。能走多远取决于你的平台开放了哪些能力。
-- **纯 markdown 加一个只用标准库的 Python 脚本。** Claude Code、Codex、Kimi Code、OpenCode、Gemini CLI 都能用，见 [INSTALL.md](INSTALL.md)。
+- **纯 markdown 加一个只用标准库的 Python 脚本。** Claude Code、Codex、Gemini CLI 有分步说明，见 [INSTALL.md](INSTALL.md)；其他能读 Agent Skills 的工具，把同一个目录拷过去就行。
 - **为速度而设计。** 先快速摸清仓库规模并分级：常规仓库在十分钟内给出结论，超大仓库也控制在十五分钟以内。大仓库会拆分给多个并行子代理同时扫描，加快审读速度。子代理用什么模型由平台自行决定，与主模型相同也完全可以。
 - **不运行正在审查的代码。** 仓库一律当作不可信数据处理：不跟随符号链接、限制读取大小，没读到的内容会记入深挖笔记，需要时再问。
 

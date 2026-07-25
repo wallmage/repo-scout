@@ -21,7 +21,9 @@ The report contains no security commentary. The single exception is clear eviden
 
 The verdict block is three to five short sentences in total, plain enough to read aloud. After the first line, cover: what this thing is in everyday words; the single biggest thing the user gets out of it (or, on 🔴, why it is not worth their time and what to use instead); whether it runs on their machine; and, when only part of it is worth having, one sentence saying what part is being set up and what is left out — a decision already made, never a question.
 
-Verdict-line examples: `🟢 INSTALL — it really does what it promises, and it runs on your Mac.` · `🔴 SKIP — the author has abandoned this (no real updates in 8 months, and it depends on a service that no longer exists); use <alternative> instead.`
+Verdict-line examples: `🟢 INSTALL — it really does what it promises, and it runs on your Mac.` · `🔴 SKIP — the author has abandoned this (no real updates in 8 months, and it depends on a service that no longer exists); use <alternative> instead.` · `🔴 SKIP — there is no code behind this link to look at, so nobody can tell you whether it is worth installing.`
+
+That last case — trigger 8, Unverifiable — is the one red that is about missing evidence, not about a fault. Say plainly what was looked for and not found, never imply the software is bad, and never let the project's own marketing stand in for the source nobody could read.
 
 ## What it is
 
@@ -40,7 +42,7 @@ At most two bullets, and only things that would genuinely change the user's week
 Answer "will this run for me, and how?" with one recommended way — never a menu.
 
 - Whether it runs on this computer: what is already in place, what is missing, and the one-line command or step to get each missing piece with the user's package manager. If probing was impossible (no shell), say so plainly and keep the recommendation generic.
-- Recommend exactly one way to run it, chosen by the experience rule and the effort rule (SKILL §Detect the environment): the full point-and-click experience whenever one exists, reached in the fewest user steps. When nothing graphical exists, say plainly: "there is no app window — you use this by typing commands."
+- Recommend exactly one way to run it, chosen by the experience rule and the effort rule ([install-playbook.md](install-playbook.md)): the full point-and-click experience whenever one exists, reached in the fewest user steps. When nothing graphical exists, say plainly: "there is no app window — you use this by typing commands."
 - If running it takes several parts working at once, that is plumbing the user should never see: the plan is one start command or start-on-login, ending with one address to open or one icon to click — never terminal windows to keep open.
 - Other documented setups get at most one sentence — "there are other ways to install it meant for developers; you don't need them" — with no list.
 - What you must have first: accounts or keys in plain words, and what they cost when the project says.
@@ -48,7 +50,7 @@ Answer "will this run for me, and how?" with one recommended way — never a men
 
 Derive everything from the project's own install docs and files; describe, never execute during the audit. If the project's own instructions are unclear or wrong, say so in plain words — that is honest, report-worthy evidence.
 
-Close the report with one line, `Source: <link>`, then follow the existing approval state (SKILL §Offer assisted installation). If the user's request was an audit only, add the single assisted-install offer, naming the one recommended way. If the user gave an imperative install, setup, or adoption request, do not ask again; continue with the approved installation after the report. No offer after an unapproved 🔴.
+Close the report with one line, `Source: <link>`, then follow the existing approval state (SKILL §9 and [install-playbook.md](install-playbook.md)). If the user's request was an audit only, add the single assisted-install offer, naming the one recommended way. If the user gave an imperative install, setup, or adoption request, do not ask again; continue with the approved installation after the report. No offer after an unapproved 🔴.
 
 ## The deep dive — researched, never volunteered
 

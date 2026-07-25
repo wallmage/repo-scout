@@ -9,6 +9,7 @@ EXPECTED = {
     "repo-scout/LICENSE",
     "repo-scout/SKILL.md",
     "repo-scout/agents/openai.yaml",
+    "repo-scout/references/install-playbook.md",
     "repo-scout/references/report-template.md",
     "repo-scout/references/rubric.md",
     "repo-scout/scripts/inventory.py",

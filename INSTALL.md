@@ -1,6 +1,6 @@
 # Installing Repo Scout
 
-`repo-scout` is an Agent Skill: English instructions, two reference files, OpenAI interface metadata, and one Python standard-library scanner. Python is optional because an agent can reproduce the inventory manually; Git or another source-download method is optional for the same reason.
+`repo-scout` is an Agent Skill: English instructions, three reference files, OpenAI interface metadata, and one Python standard-library scanner. Python is optional because an agent can reproduce the inventory manually; Git or another source-download method is optional for the same reason.
 
 Clone or download the latest revision of this repository first. When updating a Git checkout, run `git pull --ff-only` before copying. Then, from the repository root, copy the inner `repo-scout/` directory to the location your agent discovers.
 
@@ -96,8 +96,9 @@ Attach or paste:
 1. `repo-scout/SKILL.md`
 2. `repo-scout/references/rubric.md`
 3. `repo-scout/references/report-template.md`
+4. `repo-scout/references/install-playbook.md` — only needed if you will ask it to install something
 
-Without filesystem and source-access tools, also provide the target repository files. Missing install-relevant files must cap the verdict at 🔴 SKIP FOR NOW.
+Without filesystem and source-access tools, also provide the target repository files. Missing install-relevant files make the target unverifiable, which is itself a 🔴 SKIP.
 
 ## Verify the installation
 

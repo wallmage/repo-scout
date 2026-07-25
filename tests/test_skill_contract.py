@@ -15,6 +15,7 @@ class SkillContractTests(unittest.TestCase):
         self.skill = (SKILL_DIR / "SKILL.md").read_text()
         self.report = (SKILL_DIR / "references" / "report-template.md").read_text()
         self.rubric = (SKILL_DIR / "references" / "rubric.md").read_text()
+        self.playbook = (SKILL_DIR / "references" / "install-playbook.md").read_text()
 
     def test_description_is_short_and_trigger_focused(self):
         frontmatter = re.match(r"\A---\n(.*?)\n---", self.skill, re.DOTALL)
@@ -363,7 +364,7 @@ class SkillContractTests(unittest.TestCase):
             self.skill,
         )
 
-    def test_skip_fires_only_on_the_seven_closed_triggers(self):
+    def test_skip_fires_only_on_the_eight_closed_triggers(self):
         for source_name, source in (("SKILL.md", self.skill), ("rubric", self.rubric)):
             for trigger in (
                 "Fake",
@@ -373,17 +374,18 @@ class SkillContractTests(unittest.TestCase):
                 "Abandoned and obsolete",
                 "Unusable for this user",
                 "Superseded",
+                "Unverifiable",
             ):
                 self.assertIn(trigger, source, f"{trigger} missing from {source_name}")
-        # The SKIP list is closed to exactly those seven triggers.
+        # The SKIP list is closed to exactly those eight triggers.
         self.assertIn(
-            "fires only when at least one of these seven is evidenced", self.skill
+            "fires only when at least one of these eight is evidenced", self.skill
         )
         self.assertIn("nothing else ever produces a red", self.skill)
-        self.assertIn("fired only by one of the seven triggers", self.skill)
+        self.assertIn("fired only by one of the eight triggers", self.skill)
         self.assertRegex(
             self.rubric,
-            r"(?s)🔴 \*\*SKIP:\*\* Fires only when at least one of these seven is evidenced",
+            r"(?s)🔴 \*\*SKIP:\*\* Fires only when at least one of these eight is evidenced",
         )
         # Abandoned verdict must say the author abandoned it; superseded names the successor.
         self.assertIn(
@@ -452,9 +454,9 @@ class SkillContractTests(unittest.TestCase):
             "never re-fetch and execute a moving branch, tag, package label, or URL",
             "stop installation and audit the changed content before proceeding",
         ):
-            self.assertIn(phrase, self.skill)
+            self.assertIn(phrase, self.playbook)
         self.assertRegex(
-            self.skill,
+            self.playbook,
             r"(?s)Mode 1 — run the documented commands.*exact audited snapshot",
         )
 
@@ -535,13 +537,13 @@ class SkillContractTests(unittest.TestCase):
         self.assertIn("effort rule", self.skill)
         self.assertIn(
             "a terminal-only variant is recommended only when nothing graphical exists",
-            self.skill,
+            self.playbook,
         )
-        self.assertIn("fewest steps and decisions", self.skill)
+        self.assertIn("fewest steps and decisions", self.playbook)
         self.assertIn(
-            "never justifies a cut-down version of the product", self.skill
+            "never justifies a cut-down version of the product", self.playbook
         )
-        for surface in (self.skill, self.report):
+        for surface in (self.skill, self.report, self.playbook):
             self.assertNotIn("fewest new installs", surface)
             self.assertNotIn("neutral peers", surface)
         self.assertIn("one recommended way — never a menu", self.report)
@@ -549,19 +551,19 @@ class SkillContractTests(unittest.TestCase):
 
     def test_assisted_install_matches_report_and_verifies_like_a_user(self):
         self.assertIn(
-            "uses exactly the path named in **On your machine**", self.skill
+            "uses exactly the path named in **On your machine**", self.playbook
         )
-        self.assertIn("never switch silently", self.skill)
+        self.assertIn("never switch silently", self.playbook)
         self.assertIn(
-            "never leave the user with terminal windows to keep open", self.skill
+            "never leave the user with terminal windows to keep open", self.playbook
         )
-        self.assertIn("Verify like the user would", self.skill)
-        self.assertIn("never just a command echoing a version", self.skill)
+        self.assertIn("Verify like the user would", self.playbook)
+        self.assertIn("never just a command echoing a version", self.playbook)
         self.assertIn(
-            "leading with the one thing the user should do", self.skill
+            "leading with the one thing the user should do", self.playbook
         )
         self.assertIn(
-            "never vague verbs like \"patching things up\"", self.skill
+            "never vague verbs like \"patching things up\"", self.playbook
         )
 
     def test_environment_detection_probes_read_only(self):
@@ -577,54 +579,60 @@ class SkillContractTests(unittest.TestCase):
     def test_install_offer_reuses_existing_approval(self):
         self.assertIn("Offer assisted installation", self.skill)
         self.assertIn("This extends the pre-install gate", self.skill)
-        for surface in (self.skill, self.report):
+        for surface in (self.playbook, self.report):
             self.assertIn("audit only", surface)
             self.assertIn("do not ask again", surface)
         self.assertIn(
             "If the user gave an imperative install, setup, or adoption request",
-            self.skill,
+            self.playbook,
         )
         self.assertIn(
             "that original instruction is the per-session approval",
-            self.skill,
+            self.playbook,
         )
         self.assertIn(
             "Approval for this session is either the user's original explicit "
             "install request or the single yes to that post-audit offer",
-            self.skill,
+            self.playbook,
         )
-        self.assertIn("On the approval defined above", self.skill)
+        self.assertIn("On the approval defined above", self.playbook)
         self.assertIn(
             "The approval defined above is required and is per-session",
-            self.skill,
+            self.playbook,
         )
-        self.assertNotIn("On the user's yes", self.skill)
-        self.assertNotIn("the user's explicit yes is required", self.skill)
-        self.assertIn("make no offer after an unapproved", self.skill)
+        for surface in (self.skill, self.playbook):
+            self.assertNotIn("On the user's yes", surface)
+            self.assertNotIn("the user's explicit yes is required", surface)
+            self.assertIn("make no offer after an unapproved", surface)
 
     def test_assisted_install_never_handles_secrets(self):
-        self.assertIn(
-            "never types, pastes, invents, or requests credentials, API keys, "
-            "or payment details into anything",
-            self.skill,
-        )
-        self.assertIn("explains what the user must enter and where, then waits", self.skill)
-        self.assertIn(
-            "Account creation, purchases, and terms acceptance are always the "
-            "user's own steps",
-            self.skill,
-        )
+        # The credential boundary must bind from the entry point, not only the
+        # playbook a model might not open.
+        for surface in (self.skill, self.playbook):
+            self.assertIn(
+                "never types, pastes, invents, or requests credentials, API keys, "
+                "or payment details into anything",
+                surface,
+            )
+            self.assertIn(
+                "explains what the user must enter and where, then waits", surface
+            )
+            self.assertIn(
+                "Account creation, purchases, and terms acceptance are always the "
+                "user's own steps",
+                surface,
+            )
 
     def test_assisted_install_has_three_mode_fallback_chain(self):
-        self.assertIn("Mode 1 — run the documented commands", self.skill)
-        self.assertIn("Mode 2 — computer use for manual steps", self.skill)
-        self.assertIn("Mode 3 — printed manual", self.skill)
+        self.assertIn("Mode 1 — run the documented commands", self.playbook)
+        self.assertIn("Mode 2 — computer use for manual steps", self.playbook)
+        self.assertIn("Mode 3 — printed manual", self.playbook)
         self.assertRegex(
-            self.skill,
+            self.playbook,
             r"(?s)Mode 2 — computer use.*harness exposes desktop or browser control",
         )
         self.assertRegex(
-            self.skill,
+            self.playbook,
             r"(?s)Mode 3 — printed manual.*universal fallback and is always possible",
         )
         self.assertIn(
@@ -633,6 +641,84 @@ class SkillContractTests(unittest.TestCase):
         self.assertIn(
             "No shell for environment detection:", self.skill
         )
+
+    def test_unverifiable_is_a_trigger_not_a_third_verdict_label(self):
+        # "SKIP FOR NOW" was a third verdict the binary rule forbids and the
+        # report template cannot render. It must not come back to any shipped
+        # or published surface.
+        surfaces = [
+            path
+            for path in SKILL_DIR.rglob("*")
+            if path.is_file() and path.suffix.lower() in {".md", ".py", ".yaml"}
+        ]
+        surfaces += [ROOT / "README.md", ROOT / "INSTALL.md", ROOT / "docs" / "index.html"]
+        for path in surfaces:
+            self.assertNotIn(
+                "SKIP FOR NOW",
+                path.read_text(),
+                f"SKIP FOR NOW found in {path.relative_to(ROOT)}",
+            )
+        # The unverifiable cases route to the trigger instead.
+        # Four routes: unresolvable link, unfreezable byte, no source behind a
+        # pasted install command, and no web fetch available for resolution.
+        self.assertEqual(4, self.skill.count("under trigger 8"))
+        for surface in (self.skill, self.rubric):
+            self.assertIn("**Unverifiable**", surface)
+            self.assertIn("missing evidence rather than proven fault", surface)
+        self.assertIn("trigger 8, Unverifiable", self.report)
+        self.assertIn(
+            "unverifiable software cannot receive an INSTALL verdict", self.skill
+        )
+
+    def test_freshness_requires_a_date_from_the_environment(self):
+        self.assertIn("**Establish today's date from the environment first**", self.skill)
+        self.assertIn("never date from memory", self.skill)
+        self.assertIn("a model's own sense of \"now\" is its training cutoff", self.skill)
+        self.assertIn(
+            "Establish today's date from the environment before applying any "
+            "threshold",
+            self.rubric,
+        )
+        # An unavailable date resolves to unverified, which can never red.
+        self.assertIn("No reliable current date:", self.skill)
+        self.assertIn("never red on trigger 5", self.skill)
+
+    def test_resolution_covers_every_trigger_surface(self):
+        frontmatter = re.match(r"\A---\n(.*?)\n---", self.skill, re.DOTALL).group(1)
+        self.assertIn("/plugin install", frontmatter)
+        # Marketplace identifiers and deep links into a repository resolve.
+        self.assertIn("**Agent-plugin or marketplace identifier**", self.skill)
+        self.assertIn("`/plugin install name@marketplace`", self.skill)
+        self.assertIn("**Link to one part of a repository**", self.skill)
+        self.assertIn("`/tree/` or `/blob/` path", self.skill)
+        self.assertIn(
+            "whether it can be installed on its own or only together with its parent",
+            self.skill,
+        )
+        # The deer-flow lesson holds: never resolve from a remembered path.
+        self.assertIn("never from a remembered filename", self.skill)
+
+    def test_install_procedure_is_split_but_its_boundaries_are_not(self):
+        playbook = SKILL_DIR / "references" / "install-playbook.md"
+        self.assertTrue(playbook.is_file())
+        # Both install sections point at the playbook.
+        for section in ("## 7. Detect the environment", "## 9. Offer assisted"):
+            body = self.skill.split(section, 1)[1].split("\n## ", 1)[0]
+            self.assertIn("references/install-playbook.md", body)
+        # The procedure moved out.
+        for phrase in ("Mode 1 — run the documented commands", "Verify like the user would"):
+            self.assertNotIn(phrase, self.skill)
+        # The boundaries did not: a model that never opens the playbook still
+        # cannot probe destructively, install unapproved, install unaudited
+        # bytes, or touch a credential.
+        for boundary in (
+            "never install, never mutate, never start a daemon, service, or "
+            "network call while probing",
+            "Approval is required and per-session",
+            "Install only the exact snapshot that produced the verdict",
+            "Never handle the user's secrets",
+        ):
+            self.assertIn(boundary, self.skill)
 
     def test_rubric_covers_installability_and_audit_completeness(self):
         for phrase in (

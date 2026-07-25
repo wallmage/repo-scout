@@ -32,6 +32,8 @@ Craft penalties inform the score; they reach the visible report only when they c
 
 Compare meaningful commit history, releases, issue handling, and documentation with the shipped files. Separate “not available” from “bad.” Do not invent maintenance claims when hosting metadata or history is unavailable.
 
+Establish today's date from the environment before applying any threshold below; a model's own sense of "now" is its training cutoff. Where the current date cannot be established, freshness is unverified.
+
 Freshness is category-aware, and an abandonment red (SKIP trigger 5) requires both the threshold exceeded and at least one confirming signal — deprecated model names or dead APIs, unresolvable dependencies, a pile of unanswered “broken” issues, or the archived flag. The calendar alone never reds: a stale tool that still installs and works is 🟢 with a one-line “no longer maintained; works today” note.
 
 | Category | Aging (note under 🟢) | Presumed dead (🔴 with confirmation) |
@@ -71,10 +73,10 @@ Record the exact revision and note in one line anything left unread or sampled r
 
 ## Verdict gates
 
-The verdict is binary — 🟢 INSTALL or 🔴 SKIP, never a middle option, and it is mechanical: nothing outside the seven triggers below produces a red, and when none fires the verdict is green. There is no target ratio of green to red — never calibrate a verdict toward an expected distribution.
+The verdict is binary — 🟢 INSTALL or 🔴 SKIP, never a middle option, and it is mechanical: nothing outside the eight triggers below produces a red, and when none fires the verdict is green. There is no target ratio of green to red — never calibrate a verdict toward an expected distribution.
 
-- 🟢 **INSTALL:** Substance is at least 4; the mechanism is real; the target matches the user's platform; dependencies and adoption cost are acceptable; license use is allowed; none of the seven SKIP triggers fires. Worth installing the tool, deploying the application, or adding the dependency. When only specific components pass every gate while the rest is filler, still INSTALL — with the reviewer-chosen scope and path named and the excluded remainder noted in one line. A lagging or broken individual install path is never a reason to withhold INSTALL: pick a working path. When the gates pass, commit to green without reluctance — no "green, but…" framing; doubts below a SKIP trigger become at most one ownership-cost line.
-- 🔴 **SKIP:** Fires only when at least one of these seven is evidenced, and nothing else produces a red:
+- 🟢 **INSTALL:** Substance is at least 4; the mechanism is real; the target matches the user's platform; dependencies and adoption cost are acceptable; license use is allowed; none of the eight SKIP triggers fires. Worth installing the tool, deploying the application, or adding the dependency. When only specific components pass every gate while the rest is filler, still INSTALL — with the reviewer-chosen scope and path named and the excluded remainder noted in one line. A lagging or broken individual install path is never a reason to withhold INSTALL: pick a working path. When the gates pass, commit to green without reluctance — no "green, but…" framing; doubts below a SKIP trigger become at most one ownership-cost line.
+- 🔴 **SKIP:** Fires only when at least one of these eight is evidenced, and nothing else produces a red:
   1. **Fake** — headline claims have no implementing files; substance ≤ 2, claims unsupported.
   2. **Malicious or suspicious** — clear evidence of deliberate malice (see Safety), or the tool routes the user's secrets/data through the author's private server with no self-host alternative, or install artifacts cannot be matched to the visible source.
   3. **Hazardous to the user** — the core function carries documented personal risk (account bans, clear legal exposure). Name it plainly.
@@ -82,6 +84,7 @@ The verdict is binary — 🟢 INSTALL or 🔴 SKIP, never a middle option, and 
   5. **Abandoned and obsolete** — the freshness trigger (see §4 for category thresholds and the both-conditions rule). The verdict line must say plainly the author has abandoned the project.
   6. **Unusable for this user** — no documented or evidenced path runs on the user's platform; the license forbids their use; or it is not installable software at all (research artifact, paper code, demo scaffold).
   7. **Superseded** — the author archived or deprecated it. Red, with the successor named as the alternative.
+  8. **Unverifiable** — the bytes that would be installed cannot be obtained and frozen: no repository behind the link, an install-relevant file that cannot be read, an install command with no retrievable source. The only red about missing evidence rather than proven fault; the verdict sentence says there was nothing to check, never that the software is bad.
 
   Name a better alternative when possible.
 

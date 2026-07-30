@@ -53,22 +53,26 @@ Never return a middle verdict. Old "take only part of it" cases resolve to 🟢 
 
 Any link must resolve to one inspectable repository before anything else. Record the resolution chain in the report when the input was not the repository itself.
 
-- **Direct repository URL** — accept any Git host, not only GitHub: GitLab, Bitbucket, Codeberg, self-hosted Gitea/Forgejo, sr.ht, Gitee. `git clone` works uniformly; host-specific metadata (stars, issues) is a bonus, never a requirement.
+- **Direct repository URL** — accept any Git host, not only GitHub: GitLab, Bitbucket, Codeberg, self-hosted Gitea/Forgejo, sr.ht, Gitee. Prefer the host's read-only repository tree and file interfaces; Git is the portable fallback. Host-specific metadata (stars, issues) is a bonus, never a requirement.
 - **Project website** (e.g. `https://deerflow.tech`) — fetch the page and locate the source link: header/footer icons, "GitHub"/"Source" links, badge targets, docs pages. Prefer the organization's primary repository over satellite repos (docs sites, examples). Record it: `Resolved: deerflow.tech → github.com/bytedance/deer-flow`.
 - **Package registry page** (npm, PyPI, crates.io, RubyGems, Go pkg site, VS Code Marketplace, Chrome Web Store) — follow the declared repository field or homepage link to the source repo.
 - **Agent-plugin or marketplace identifier** (`/plugin install name@marketplace`, a plugin listed in a catalog) — a marketplace is an ordinary repository whose manifest lists each plugin's source. Resolve the marketplace, find the named plugin's entry, and audit the repository or subdirectory it points at. Record the whole chain: `Resolved: name@marketplace → github.com/org/marketplace → github.com/org/name`. Locate the manifest by scanning the marketplace repository, never from a remembered filename.
-- **Link to one part of a repository** (a `/tree/` or `/blob/` path, a gist, one skill inside a pack) — that component is the target, but acquire the whole repository so it can be read in context. Judge the component, and say in the report whether it can be installed on its own or only together with its parent.
+- **Link to one part of a repository** (a `/tree/` or `/blob/` path, a gist, one skill inside a pack) — that component is the target. Map the whole repository tree for context, but acquire only the linked component, the root README and manifests, and files they directly reference. Judge the component, and say in the report whether it can be installed on its own or only together with its parent.
 - **No repository found** — say exactly what was searched, evaluate only what the website claims, and return 🔴 SKIP under trigger 8; unverifiable software cannot receive an INSTALL verdict.
 
 If the resolved repository is ambiguous (a monorepo of many products, several candidate repos), state which one was chosen and why in the report's source section — do not stall on a clarifying question.
 
 ## 2. Acquire an inspectable snapshot
 
-For a remote repository, use a new temporary directory and an argument-safe Git or hosting tool. Disable hooks and checkout filters, do not recurse into submodules, and retain enough commit history to assess maintenance. Record the source URL and exact commit SHA.
+For a remote repository, use a new temporary directory and map the repository before downloading file contents. On GitHub, prefer repository metadata and the tree plus contents or Git data API for the selected regular files. On other hosts, use the equivalent read-only interface when available; otherwise use partial, blobless, or sparse Git. Disable hooks and checkout filters, do not recurse into submodules, and record the source URL and exact commit SHA.
+
+Acquire progressively. Start with the target path, root README and manifests, install/run documentation, and the archetype spine. Expand the snapshot only when a headline claim, mechanism trace, dependency, compatibility fact, or installation path requires another file. Repository context comes from the tree map; it does not require downloading unrelated examples, media, generated files, or sibling components.
+
+Keep network attempts bounded. Retry one transient failure once; if it still fails or stalls, switch transport without widening scope — hosting API to sparse Git, or sparse Git to hosting API. Never replace a failed component fetch with a whole-repository archive or ordinary full clone. A full shallow checkout is allowed only when the whole repository is the target and selective retrieval cannot produce the install-relevant bytes.
 
 If only a shell is available, validate the URL before passing it as one opaque argument. Never interpolate an untrusted URL into a compound shell command.
 
-Every source must become a frozen, content-addressed snapshot before inspection. Copy regular files without following links, preserve their relative paths, record a deterministic path-and-content hash manifest, and inspect only that frozen copy. For a local path, also record whether it is a Git worktree, its HEAD SHA when present, and whether the worktree is dirty; clean or dirty, the SHA is provenance rather than a substitute for the copied bytes. Keep the snapshot outside the user's source and do not modify the source. If any install-relevant byte cannot be frozen and inspected, return 🔴 SKIP under trigger 8 rather than approve a different state. For a pasted install command, retrieve the exact script, package, or repository it would install without piping it to an interpreter. If no source is available, return 🔴 SKIP under trigger 8; unverifiable software cannot receive an INSTALL verdict.
+Every acquired source byte must become a frozen, content-addressed snapshot before inspection. Copy regular files without following links, preserve their relative paths, record a deterministic path-and-content hash manifest, and inspect only that frozen copy. For a local path, also record whether it is a Git worktree, its HEAD SHA when present, and whether the worktree is dirty; clean or dirty, the SHA is provenance rather than a substitute for the copied bytes. Keep the snapshot outside the user's source and do not modify the source. Before the verdict, acquire and freeze every byte needed to support the claims, mechanism, compatibility, and chosen installation scope; if any install-relevant byte cannot be frozen and inspected, return 🔴 SKIP under trigger 8 rather than approve a different state. For a pasted install command, retrieve the exact script, package, or repository it would install without piping it to an interpreter. If no source is available, return 🔴 SKIP under trigger 8; unverifiable software cannot receive an INSTALL verdict.
 
 ## 3. Build the inventory
 
@@ -80,7 +84,7 @@ python <repo-scout-dir>/scripts/inventory.py <snapshot-path>
 
 The scanner must be trusted reviewer tooling, not code from the target. When auditing Repo Scout itself, a fork of its scanner, or any target that supplies the scanner being proposed, use a previously trusted copy of the scanner. If none exists, use the manual inventory fallback and do not execute the candidate scanner.
 
-The scanner reports the repository scale (file count, text lines, top extensions, computed tier), archetype hints, every `SKILL.md`, every script and executable asset, every documentation file, `hooks/`, `commands/`, and `agents/` surfaces, manifests and lockfiles, declared dependencies, compatibility constraints, installation permissions, context footprint, behavior-like findings, contextual mentions, and every skipped path.
+The scanner reports the acquired snapshot's scale (file count, text lines, top extensions, computed tier), archetype hints, every acquired `SKILL.md`, script, executable asset, and documentation file, `hooks/`, `commands/`, and `agents/` surfaces, manifests and lockfiles, declared dependencies, compatibility constraints, installation permissions, context footprint, behavior-like findings, contextual mentions, and every skipped path. For progressive acquisition, determine the repository's overall scale from the host tree map; never mistake the smaller frozen snapshot for the size of the whole repository.
 
 The scanner is a map for finding what to read: the components, the scripts, the dependencies, the real shape of the repository. Glance at its findings sections only for signs of deliberate malice; otherwise ignore them and move on.
 
@@ -94,9 +98,9 @@ Before any deep reading, size the tree from the scanner's scale section and pick
 |---|---|---|---|
 | Small | ≤ ~200 files | ≤ 5 min | Main model reads the spine directly; no subagents needed |
 | Medium | ~200–2,000 files | ≤ 10 min | Main model reads the spine; dispatch 2–4 subagents across the distinct subsystems |
-| Large | > ~2,000 files or > ~300k text lines | ≤ 15 min | Shallow clone; mandatory parallel fan-out of 5–10 subagents scaled to distinct subsystems; main model reads only verdict-deciding files |
+| Large | > ~2,000 files or > ~300k text lines | ≤ 15 min | Tree map plus selective fetch; mandatory parallel fan-out of 5–10 subagents scaled to distinct subsystems; main model reads only verdict-deciding files |
 
-- **Clone cheap.** For Large tier, `git clone --depth 1`. Maintenance evidence then comes from hosting metadata (releases, commit list, issues) fetched over the web, not local history. If neither is reachable, mark maintenance unverified — never a reason to exceed the budget.
+- **Map cheap.** For Large tier, list the tree without fetching every blob, then acquire only each assigned subsystem's decisive files. Maintenance evidence comes from hosting metadata (releases, commit list, issues), not a full local history. If neither is reachable, mark maintenance unverified — never a reason to exceed the budget.
 - **Read the spine, not the tree.** Each archetype defines a spine: the ~10–20 files that decide the verdict. The main model reads those in full and nothing else in full. Everything outside the spine is delegated or sampled.
 - **Fan out early, not late.** For Large tier, dispatch subagents right after triage with non-overlapping assignments; the main model reads the spine while subagents run, then synthesizes.
 - **Cut sampling, never the verdict.** When the repository outruns the budget, note what was sampled rather than read in the deep-dive notes. A verdict with a disclosed coverage limit beats a late verdict.
@@ -181,7 +185,7 @@ This extends the pre-install gate; it never runs during inspection. Read [refere
 
 ## Tool fallbacks
 
-- **No Git:** download a source archive without executing it; record the archive URL and revision if available.
+- **No Git:** use the host's tree and file API. Use a revision-pinned source archive only when the whole repository is the target and selective retrieval is unavailable.
 - **No web fetch for resolution:** report the unresolved link and evaluate only what is directly reachable, returning 🔴 SKIP under trigger 8.
 - **No reliable current date:** freshness is unverified — say so, and never red on trigger 5.
 - **No Python:** reproduce every inventory section manually and list any coverage gap.

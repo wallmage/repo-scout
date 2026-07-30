@@ -732,6 +732,27 @@ class SkillContractTests(unittest.TestCase):
         # The deer-flow lesson holds: never resolve from a remembered path.
         self.assertIn("never from a remembered filename", self.skill)
 
+    def test_repository_deep_links_use_progressive_acquisition(self):
+        self.assertNotIn(
+            "acquire the whole repository so it can be read in context",
+            self.skill,
+        )
+        for phrase in (
+            "map the repository before downloading file contents",
+            "acquire only the linked component",
+            "root README and manifests",
+            "files they directly reference",
+            "Expand the snapshot only when",
+            "Retry one transient failure once",
+            "switch transport without widening scope",
+            "Never replace a failed component fetch with a whole-repository archive",
+        ):
+            self.assertIn(phrase, self.skill)
+        self.assertRegex(
+            self.skill,
+            r"(?s)GitHub.*contents or Git data API.*partial, blobless, or sparse Git",
+        )
+
     def test_install_procedure_is_split_but_its_boundaries_are_not(self):
         playbook = SKILL_DIR / "references" / "install-playbook.md"
         self.assertTrue(playbook.is_file())

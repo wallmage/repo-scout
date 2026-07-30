@@ -536,6 +536,24 @@ class SkillContractTests(unittest.TestCase):
             "translate everything, including the verdict words", self.skill
         )
 
+    def test_green_opening_leads_with_mechanism_and_effect(self):
+        self.assertIn(
+            "For 🟢, use this exact information order",
+            self.report,
+        )
+        self.assertIn(
+            "Passing an audit gate is not a user benefit",
+            self.report,
+        )
+        self.assertIn(
+            "lead with the mechanism, how it works, and what it lets the user do",
+            self.skill,
+        )
+        self.assertNotIn(
+            "it really does what it promises",
+            self.report,
+        )
+
     def test_deep_dive_material_is_hidden_until_asked(self):
         self.assertIn("## The deep dive", self.report)
         self.assertIn('"deep dive"', self.report)

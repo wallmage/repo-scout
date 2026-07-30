@@ -63,6 +63,8 @@ Trace what adoption changes as ownership information: the user should know what 
 
 Every report must make clear when the user would actually reach for this — the "Why you'd want it" bullets carry that answer, told from the experience standpoint. When reading (not marketing) reveals it, state how the target compares to the obvious alternative — and, when value is partial, the exact subset and path worth installing and what is excluded. Fit feeds the verdict sentences. A report that cannot tell a newcomer how to run the target has not finished the audit: the visible report must say what it is and give the one recommended way to run it on the user's machine — the full graphical experience whenever one exists.
 
+A green opening comes from the traced mechanism and its concrete effect on the user's work. Passing the Substance or Mechanism gate is internal bookkeeping, not report content.
+
 ## 9. Audit completeness
 
 Record the exact revision and note in one line anything left unread or sampled rather than read — in the deep-dive notes, never in the visible report. Unread material lowers confidence in the scores it would have informed; it does not block a verdict.

@@ -17,11 +17,20 @@ The report contains no security commentary. The single exception is clear eviden
 
 # Scout Report: <name>
 
-**Verdict: 🟢 INSTALL | 🔴 SKIP** — <one sentence naming the decisive reason>
+**Verdict: 🟢 INSTALL | 🔴 SKIP** — <on green: the distinctive mechanism and its concrete effect; on red: the decisive failure>
 
-The verdict block is three to five short sentences in total, plain enough to read aloud. After the first line, cover: what this thing is in everyday words; the single biggest thing the user gets out of it (or, on 🔴, why it is not worth their time and what to use instead); whether it runs on their machine; and, when only part of it is worth having, one sentence saying what part is being set up and what is left out — a decision already made, never a question.
+The verdict block is three to five short sentences in total, plain enough to read aloud.
 
-Verdict-line examples: `🟢 INSTALL — it really does what it promises, and it runs on your Mac.` · `🔴 SKIP — the author has abandoned this (no real updates in 8 months, and it depends on a service that no longer exists); use <alternative> instead.` · `🔴 SKIP — there is no code behind this link to look at, so nobody can tell you whether it is worth installing.`
+For 🟢, use this exact information order:
+
+1. First sentence: name the distinctive mechanism and the result it produces.
+2. Second sentence: explain the input → transformation → output in everyday words.
+3. Third sentence: say what this lets the user do better, faster, or more easily.
+4. Final sentence: say whether it runs on their machine. When only part is worth having, say what part is being set up and what is left out.
+
+Passing an audit gate is not a user benefit and never belongs in a green opening. Mention a failed gate only when it causes a red verdict.
+
+Verdict-line examples: `🟢 INSTALL — it splits one research question among several investigators, cross-checks their evidence, and combines it into one sourced report.` · `🔴 SKIP — the author has abandoned this (no meaningful updates in 8 months, and it depends on a service that no longer exists); use <alternative> instead.` · `🔴 SKIP — there is no code behind this link to look at, so nobody can tell you whether it is worth installing.`
 
 That last case — trigger 8, Unverifiable — is the one red that is about missing evidence, not about a fault. Say plainly what was looked for and not found, never imply the software is bad, and never let the project's own marketing stand in for the source nobody could read.
 

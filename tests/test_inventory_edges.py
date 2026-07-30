@@ -184,7 +184,7 @@ class MetadataParserTests(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(expected, inventory._manifest_category(path))
 
-    def test_path_evidence_covers_integrations_platforms_and_licenses(self):
+    def test_path_evidence_covers_integrations_and_platforms(self):
         result = inventory.Inventory(root="/tmp/demo")
 
         for path in (
@@ -194,7 +194,6 @@ class MetadataParserTests(unittest.TestCase):
             ".codex-plugin/plugin.json",
             ".claude/settings.json",
             ".gemini/config.json",
-            "LICENSE.txt",
         ):
             inventory._collect_path_evidence(result, path, "inspected")
 
@@ -207,11 +206,6 @@ class MetadataParserTests(unittest.TestCase):
         self.assertIn(("platform", "OpenAI Codex plugin; inspected"), details)
         self.assertIn(("platform", "Claude configuration; inspected"), details)
         self.assertIn(("platform", "Gemini instructions; inspected"), details)
-        self.assertEqual(
-            [("LICENSE.txt", "license file; inspected")],
-            [(item.path, item.detail) for item in result.licenses],
-        )
-
     def test_requirement_parser_handles_ignored_direct_and_local_values(self):
         self.assertIsNone(inventory._dependency_from_requirement("", "runtime", "req.txt"))
         self.assertIsNone(
@@ -256,7 +250,6 @@ class MetadataParserTests(unittest.TestCase):
         inventory._parse_package_json(
             json.dumps(
                 {
-                    "license": "MIT",
                     "dependencies": ["wrong shape"],
                     "engines": {"node": ">=20", "vscode": "^1.90"},
                     "os": "darwin",
@@ -272,10 +265,6 @@ class MetadataParserTests(unittest.TestCase):
 
         self.assertEqual([], result.dependencies)
         self.assertIn(
-            inventory.EvidenceRecord("declared", "package.json", "MIT"),
-            result.licenses,
-        )
-        self.assertIn(
             inventory.EvidenceRecord("operating system", "package.json", "darwin"),
             result.compatibility,
         )
@@ -287,11 +276,10 @@ class MetadataParserTests(unittest.TestCase):
         self.assertIn(("package entry point", "bin declared"), hints)
         self.assertIn(("extension manifest", "VS Code extension package.json"), hints)
 
-    def test_pyproject_parser_covers_build_license_and_malformed_shapes(self):
+    def test_pyproject_parser_covers_build_and_malformed_shapes(self):
         result = inventory.Inventory(root="/tmp/demo")
         inventory._parse_pyproject(
             "[project]\n"
-            'license = "MIT"\n'
             'dependencies = ["runtime>=1"]\n'
             "[build-system]\n"
             'requires = ["builder>=2"]\n'
@@ -307,11 +295,6 @@ class MetadataParserTests(unittest.TestCase):
         self.assertIn(("runtime", ">=1", "runtime"), dependencies)
         self.assertIn(("builder", ">=2", "build"), dependencies)
         self.assertIn(("sphinx", ">=7", "optional:docs"), dependencies)
-        self.assertIn(
-            inventory.EvidenceRecord("declared", "pyproject.toml", "MIT"),
-            result.licenses,
-        )
-
         malformed = inventory.Inventory(root="/tmp/demo")
         inventory._parse_pyproject("[project]\ndependencies = ???", "bad.toml", malformed)
         self.assertEqual([], malformed.dependencies)
@@ -324,17 +307,11 @@ class MetadataParserTests(unittest.TestCase):
                 "project": {
                     "dependencies": [],
                     "optional-dependencies": {"bad": "not a list"},
-                    "license": {"file": "COPYING"},
                 },
                 "build-system": "not a table",
             },
         ):
             inventory._parse_pyproject("", "pyproject.toml", unusual)
-        self.assertIn(
-            inventory.EvidenceRecord("declared", "pyproject.toml", "COPYING"),
-            unusual.licenses,
-        )
-
         not_a_project = inventory.Inventory(root="/tmp/demo")
         with mock.patch.object(
             inventory,
@@ -378,7 +355,6 @@ class MetadataParserTests(unittest.TestCase):
             "[package]\n"
             'name = "demo"\n'
             'rust-version = "1.75"\n'
-            'license = "Apache-2.0"\n'
             "[dependencies]\n"
             'serde = "1"\n'
             'reqwest = { version = "0.12", features = ["json"] }\n'
@@ -411,10 +387,6 @@ class MetadataParserTests(unittest.TestCase):
         self.assertIn(
             inventory.EvidenceRecord("runtime", "Cargo.toml", "rust 1.75"),
             result.compatibility,
-        )
-        self.assertIn(
-            inventory.EvidenceRecord("declared", "Cargo.toml", "Apache-2.0"),
-            result.licenses,
         )
         self.assertIn(
             inventory.ArchetypeHint(
@@ -688,9 +660,6 @@ class RenderingAndCliTests(unittest.TestCase):
         result.dependencies.append(
             inventory.DependencyRecord("demo", "", "runtime", "package.json")
         )
-        result.licenses.append(
-            inventory.EvidenceRecord("declared", "package.json", "MIT")
-        )
         result.compatibility.append(
             inventory.EvidenceRecord("runtime", "package.json", "node >=20")
         )
@@ -740,7 +709,6 @@ class RenderingAndCliTests(unittest.TestCase):
             "Skills found: 1",
             "Integration surfaces: 1",
             "Declared dependencies: 1",
-            "License evidence: 1",
             "Compatibility evidence: 1",
             "Install and permission surfaces: 1",
             "linked: symbolic link -> ../outside",

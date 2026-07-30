@@ -1,6 +1,6 @@
 # Judging Rubric
 
-Score each dimension from 1–5, but derive the verdict from gating conditions rather than an average. Compatibility or licensing can block an INSTALL; security enters a report only on clear evidence of deliberate malice, and the user can override any verdict. "Target" means whatever was linked — a skill pack, a developer tool, or a full application.
+Score each dimension from 1–5, but derive the verdict from gating conditions rather than an average. Compatibility can block an INSTALL; security enters a report only on clear evidence of deliberate malice, and the user can override any verdict. "Target" means whatever was linked — a skill pack, a developer tool, or a full application.
 
 The scores and axis names are internal reasoning only. No numeric score, axis name, or rubric vocabulary ever appears in anything shown to the user — the visible report speaks plain everyday language, and detailed findings surface only in the deep-dive notes when the user asks for them.
 
@@ -55,19 +55,15 @@ Everything below that bar — unintended vulnerabilities, bad practices, hygiene
 
 Identify supported agent platforms, runtime and operating-system constraints, package manifests, lockfiles, direct/build/optional dependencies, external services, and version conflicts. Distinguish declared compatibility from compatibility actually evidenced by files. A current-platform mismatch blocks INSTALL.
 
-## 7. License
-
-Find license files and manifest declarations; note conflicts between them. A missing or incompatible license blocks installation or extraction when copying the code would lack permission. Do not infer a license from repository visibility.
-
-## 8. Installation permissions
+## 7. Installation permissions
 
 Trace what adoption changes as ownership information: the user should know what lands on the machine and what it costs to keep. Beyond directories, global packages, hooks, context footprint, and persistence, weigh the full adoption cost — deployment complexity, required external services and API keys, infra footprint, and operational upkeep. This is a practical note, not a safety judgment. Unclear upstream install docs are themselves an ownership-cost finding: the effort a newcomer spends decoding how to run the target is part of what adoption costs.
 
-## 9. Fit
+## 8. Fit
 
 Every report must make clear when the user would actually reach for this — the "Why you'd want it" bullets carry that answer, told from the experience standpoint. When reading (not marketing) reveals it, state how the target compares to the obvious alternative — and, when value is partial, the exact subset and path worth installing and what is excluded. Fit feeds the verdict sentences. A report that cannot tell a newcomer how to run the target has not finished the audit: the visible report must say what it is and give the one recommended way to run it on the user's machine — the full graphical experience whenever one exists.
 
-## 10. Audit completeness
+## 9. Audit completeness
 
 Record the exact revision and note in one line anything left unread or sampled rather than read — in the deep-dive notes, never in the visible report. Unread material lowers confidence in the scores it would have informed; it does not block a verdict.
 
@@ -75,14 +71,14 @@ Record the exact revision and note in one line anything left unread or sampled r
 
 The verdict is binary — 🟢 INSTALL or 🔴 SKIP, never a middle option, and it is mechanical: nothing outside the eight triggers below produces a red, and when none fires the verdict is green. There is no target ratio of green to red — never calibrate a verdict toward an expected distribution.
 
-- 🟢 **INSTALL:** Substance is at least 4; the mechanism is real; the target matches the user's platform; dependencies and adoption cost are acceptable; license use is allowed; none of the eight SKIP triggers fires. Worth installing the tool, deploying the application, or adding the dependency. When only specific components pass every gate while the rest is filler, still INSTALL — with the reviewer-chosen scope and path named and the excluded remainder noted in one line. A lagging or broken individual install path is never a reason to withhold INSTALL: pick a working path. When the gates pass, commit to green without reluctance — no "green, but…" framing; doubts below a SKIP trigger become at most one ownership-cost line.
+- 🟢 **INSTALL:** Substance is at least 4; the mechanism is real; the target matches the user's platform; dependencies and adoption cost are acceptable; none of the eight SKIP triggers fires. Worth installing the tool, deploying the application, or adding the dependency. When only specific components pass every gate while the rest is filler, still INSTALL — with the reviewer-chosen scope and path named and the excluded remainder noted in one line. A lagging or broken individual install path is never a reason to withhold INSTALL: pick a working path. When the gates pass, commit to green without reluctance — no "green, but…" framing; doubts below a SKIP trigger become at most one ownership-cost line.
 - 🔴 **SKIP:** Fires only when at least one of these eight is evidenced, and nothing else produces a red:
   1. **Fake** — headline claims have no implementing files; substance ≤ 2, claims unsupported.
   2. **Malicious or suspicious** — clear evidence of deliberate malice (see Safety), or the tool routes the user's secrets/data through the author's private server with no self-host alternative, or install artifacts cannot be matched to the visible source.
-  3. **Hazardous to the user** — the core function carries documented personal risk (account bans, clear legal exposure). Name it plainly.
+  3. **Hazardous to the user** — the core function carries documented personal risk, such as account bans from unofficial automation of platforms known to ban for it. Name it plainly.
   4. **Broken as shipped** — does not run today regardless of age: unresolvable dependencies, dead endpoints, install steps referencing missing files.
   5. **Abandoned and obsolete** — the freshness trigger (see §4 for category thresholds and the both-conditions rule). The verdict line must say plainly the author has abandoned the project.
-  6. **Unusable for this user** — no documented or evidenced path runs on the user's platform; the license forbids their use; or it is not installable software at all (research artifact, paper code, demo scaffold).
+  6. **Unusable for this user** — no documented or evidenced path runs on the user's platform, or it is not installable software at all (research artifact, paper code, demo scaffold).
   7. **Superseded** — the author archived or deprecated it. Red, with the successor named as the alternative.
   8. **Unverifiable** — the bytes that would be installed cannot be obtained and frozen: no repository behind the link, an install-relevant file that cannot be read, an install command with no retrievable source. The only red about missing evidence rather than proven fault; the verdict sentence says there was nothing to check, never that the software is bad.
 
@@ -106,4 +102,4 @@ The user can override any verdict. Give the reminder once, then assist with thei
 - A thin wrapper around one API call dressed up as a system
 - Placeholder scripts or dead assets
 - Viral presentation paired with thin bodies
-- Missing license, unexplained lifecycle scripts, or undeclared persistence
+- Unexplained lifecycle scripts or undeclared persistence

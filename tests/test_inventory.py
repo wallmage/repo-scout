@@ -439,6 +439,23 @@ class SafeTraversalTests(unittest.TestCase):
 
 
 class RepositorySurfaceTests(unittest.TestCase):
+    def test_repository_license_metadata_is_not_collected_or_rendered(self):
+        with tempfile.TemporaryDirectory() as root_dir:
+            root = Path(root_dir)
+            (root / "LICENSE").write_text("Example license text\n")
+            (root / "package.json").write_text(
+                '{"name": "demo", "license": "MIT"}\n'
+            )
+            (root / "pyproject.toml").write_text(
+                '[project]\nname = "demo"\nlicense = {text = "Apache-2.0"}\n'
+            )
+
+            result = inventory.scan_repository(root)
+            rendered = inventory.render_inventory(result)
+
+            self.assertFalse(hasattr(result, "licenses"))
+            self.assertNotIn("License evidence", rendered)
+
     def test_integration_directories_and_platform_hints_are_reported(self):
         with tempfile.TemporaryDirectory() as root_dir:
             root = Path(root_dir)
@@ -461,14 +478,13 @@ class RepositorySurfaceTests(unittest.TestCase):
             self.assertIn(("platform", "Claude configuration; inspected"), compatibility)
             self.assertIn(("platform", "Gemini instructions; inspected"), compatibility)
 
-    def test_manifests_dependencies_licenses_and_runtime_constraints_are_reported(self):
+    def test_manifests_dependencies_and_runtime_constraints_are_reported(self):
         with tempfile.TemporaryDirectory() as root_dir:
             root = Path(root_dir)
             (root / "package.json").write_text(
                 json.dumps(
                     {
                         "name": "demo",
-                        "license": "MIT",
                         "dependencies": {"runtime-lib": "^1.2.0"},
                         "devDependencies": {"test-lib": "~3.0.0"},
                         "engines": {"node": ">=20"},
@@ -481,7 +497,6 @@ class RepositorySurfaceTests(unittest.TestCase):
                 "[project]\n"
                 "requires-python = \">=3.10\"\n"
                 "dependencies = [\"httpx>=0.27\", \"rich\"]\n"
-                "license = {text = \"Apache-2.0\"}\n"
                 "[project.optional-dependencies]\n"
                 "test = [\"pytest>=8\"]\n"
             )
@@ -491,8 +506,6 @@ class RepositorySurfaceTests(unittest.TestCase):
                 "go 1.22\n\n"
                 "require example.test/library v1.2.3\n"
             )
-            (root / "LICENSE").write_text("MIT License\n")
-
             result = inventory.scan_repository(root)
 
             manifests = {(item.path, item.category) for item in result.manifests}
@@ -511,11 +524,6 @@ class RepositorySurfaceTests(unittest.TestCase):
             self.assertIn(("pytest", ">=8", "optional:test", "pyproject.toml"), dependencies)
             self.assertIn(("requests", "==2.32.0", "runtime", "requirements.txt"), dependencies)
             self.assertIn(("example.test/library", "v1.2.3", "runtime", "go.mod"), dependencies)
-
-            licenses = {(item.path, item.detail) for item in result.licenses}
-            self.assertIn(("LICENSE", "license file; inspected"), licenses)
-            self.assertIn(("package.json", "MIT"), licenses)
-            self.assertIn(("pyproject.toml", "Apache-2.0"), licenses)
 
             compatibility = {(item.category, item.detail) for item in result.compatibility}
             self.assertIn(("runtime", "node >=20"), compatibility)
@@ -662,17 +670,14 @@ class RepositorySurfaceTests(unittest.TestCase):
                 "[project]\n"
                 "requires-python = \">=3.9\"\n"
                 "dependencies = [\"httpx>=0.27\"]\n"
-                "license = {text = \"MIT\"}\n"
             )
 
             with mock.patch.object(inventory, "tomllib", None):
                 result = inventory.scan_repository(root)
 
             dependencies = {(item.name, item.specification) for item in result.dependencies}
-            licenses = {(item.path, item.detail) for item in result.licenses}
             compatibility = {(item.category, item.detail) for item in result.compatibility}
             self.assertIn(("httpx", ">=0.27"), dependencies)
-            self.assertIn(("pyproject.toml", "MIT"), licenses)
             self.assertIn(("runtime", "python >=3.9"), compatibility)
             self.assertIn(
                 (

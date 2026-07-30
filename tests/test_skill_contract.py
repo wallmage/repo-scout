@@ -466,13 +466,29 @@ class SkillContractTests(unittest.TestCase):
             "core mechanism",
             "commit SHA",
             "dependencies",
-            "license",
             "compatibility",
             "installation permissions",
         ):
             self.assertIn(phrase, self.skill)
         self.assertNotIn("coverage ledger", self.skill.lower())
         self.assertNotIn("appendix", self.skill.lower())
+
+    def test_target_license_is_outside_the_audit_and_verdict(self):
+        self.assertIn(
+            "The inventory fields and verdict gates are closed lists",
+            self.skill,
+        )
+        operational_files = (
+            SKILL_DIR / "SKILL.md",
+            SKILL_DIR / "references" / "rubric.md",
+            SKILL_DIR / "references" / "report-template.md",
+            SKILL_DIR / "scripts" / "inventory.py",
+        )
+        for path in operational_files:
+            self.assertIsNone(
+                re.search(r"\blicen[cs]e(?:s|d|ing)?\b", path.read_text(), re.IGNORECASE),
+                f"target-license logic remains in {path.relative_to(ROOT)}",
+            )
 
     def test_report_is_merit_focused_with_malice_only_tripwire(self):
         self.assertIn("no security commentary", self.report)
@@ -723,7 +739,6 @@ class SkillContractTests(unittest.TestCase):
     def test_rubric_covers_installability_and_audit_completeness(self):
         for phrase in (
             "Compatibility & dependencies",
-            "License",
             "Installation permissions",
             "Audit completeness",
         ):

@@ -60,7 +60,7 @@ The sections above are the entire visible report. The audit still produces the d
 - The active ingredients and the filler: which components survive the removal test, which are decoration.
 - A 10-minute reading map: 2–4 real file paths in reading order, each with what to notice.
 - Worth stealing: 2–4 reusable design patterns.
-- Compatibility and ownership detail: platform constraints, dependencies, license, install footprint, maintenance evidence, context cost.
+- Compatibility and ownership detail: platform constraints, dependencies, install footprint, maintenance evidence, context cost.
 - Audit bookkeeping: exact revision, the resolution chain, worktree or content-hash state, and what was left unread or sampled.
 
 Never advertise that this level exists; the reader who needs it knows the words.

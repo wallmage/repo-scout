@@ -90,7 +90,6 @@ SOURCE_EXTS = SCRIPT_EXTS | {
 }
 DOC_EXTS = {".md", ".mdx", ".rst", ".txt"}
 INTEGRATION_DIRS = {"agents", "commands", "hooks"}
-LICENSE_PREFIXES = ("copying", "license", "notice")
 PACKAGE_LIFECYCLE_SCRIPTS = {
     "preinstall",
     "install",
@@ -216,7 +215,6 @@ class Inventory:
     integration_paths: List[EvidenceRecord] = field(default_factory=list)
     manifests: List[EvidenceRecord] = field(default_factory=list)
     dependencies: List[DependencyRecord] = field(default_factory=list)
-    licenses: List[EvidenceRecord] = field(default_factory=list)
     compatibility: List[EvidenceRecord] = field(default_factory=list)
     install_surfaces: List[EvidenceRecord] = field(default_factory=list)
     archetype_hints: List[ArchetypeHint] = field(default_factory=list)
@@ -434,14 +432,6 @@ def _collect_path_evidence(result: Inventory, rel: str, inspection: str) -> None
             EvidenceRecord(manifest, rel, _path_evidence_detail("detected", inspection)),
         )
 
-    if path.name.lower().startswith(LICENSE_PREFIXES):
-        _append_unique(
-            result.licenses,
-            EvidenceRecord(
-                "file", rel, _path_evidence_detail("license file", inspection)
-            ),
-        )
-
     filename = path.name.lower()
     if "agents" in lower_parts and filename == "openai.yaml":
         _append_unique(
@@ -568,10 +558,6 @@ def _parse_package_json(text: str, rel: str, result: Inventory) -> None:
                     DependencyRecord(str(name), str(specification), group, rel),
                 )
 
-    license_value = data.get("license")
-    if isinstance(license_value, str):
-        _append_unique(result.licenses, EvidenceRecord("declared", rel, license_value))
-
     engines = data.get("engines", {})
     if isinstance(engines, dict):
         for name, constraint in engines.items():
@@ -625,13 +611,6 @@ def _fallback_pyproject(text: str) -> Dict[str, Any]:
     if python_match:
         project["requires-python"] = python_match.group(1)
     project["dependencies"] = _fallback_toml_array(project_section, "dependencies")
-    license_match = re.search(
-        r"(?m)^license\s*=\s*\{\s*text\s*=\s*['\"]([^'\"]+)['\"]",
-        project_section,
-    )
-    if license_match:
-        project["license"] = {"text": license_match.group(1)}
-
     optional_section = _toml_section(text, "project.optional-dependencies")
     optional = {}
     for key, values in re.findall(r"(?ms)^([A-Za-z0-9_.-]+)\s*=\s*\[(.*?)\]", optional_section):
@@ -691,14 +670,6 @@ def _parse_pyproject(text: str, rel: str, result: Inventory) -> None:
             result.compatibility,
             EvidenceRecord("runtime", rel, f"python {requires_python}"),
         )
-    license_value = project.get("license")
-    if isinstance(license_value, str):
-        _append_unique(result.licenses, EvidenceRecord("declared", rel, license_value))
-    elif isinstance(license_value, dict):
-        detail = license_value.get("text") or license_value.get("file")
-        if detail:
-            _append_unique(result.licenses, EvidenceRecord("declared", rel, str(detail)))
-
     build_system = data.get("build-system", {}) if isinstance(data, dict) else {}
     if isinstance(build_system, dict):
         for requirement in build_system.get("requires", []) or []:
@@ -770,11 +741,6 @@ def _parse_cargo_toml(text: str, rel: str, result: Inventory) -> None:
             _append_unique(
                 result.compatibility,
                 EvidenceRecord("runtime", rel, f"rust {package['rust-version']}"),
-            )
-        if package.get("license"):
-            _append_unique(
-                result.licenses,
-                EvidenceRecord("declared", rel, str(package["license"])),
             )
     for field_name, group in (
         ("dependencies", "runtime"),
@@ -1498,7 +1464,6 @@ def scan_repository(root: Path, max_file_bytes: int = DEFAULT_MAX_FILE_BYTES) ->
         result.integration_paths,
         result.manifests,
         result.dependencies,
-        result.licenses,
         result.compatibility,
         result.install_surfaces,
     ):
@@ -1610,13 +1575,6 @@ def render_inventory(result: Inventory) -> str:
         lines.append(
             f"  [{_safe_display(item.group)}] {_safe_display(item.name)}"
             f"{_safe_display(specification)} ({_safe_display(item.path)})"
-        )
-
-    lines.extend(["", f"License evidence: {len(result.licenses)}"])
-    for item in result.licenses:
-        lines.append(
-            f"  [{_safe_display(item.category)}] {_safe_display(item.path)}: "
-            f"{_safe_display(item.detail)}"
         )
 
     lines.extend(["", f"Compatibility evidence: {len(result.compatibility)}"])

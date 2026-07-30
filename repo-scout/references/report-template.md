@@ -1,6 +1,6 @@
 # Scout Report Template
 
-Use this structure. Keep the whole report near half a page for a single target and under one page for a very large repository. Cut detail before cutting clarity: every dropped sentence should be one the reader would have skimmed anyway.
+Use this structure. Keep the whole report to one to two pages for a single target and at most three pages for a very large repository. The step-by-step mechanism is the main body; cut audit bookkeeping and background before cutting the explanation of how the target works.
 
 Write for a reader with no technical background — someone's mom or dad, busy, deciding whether this thing is worth their time. Every sentence must make sense to that reader on first pass. Write in the user's language and translate everything, including the verdict words; only the 🟢/🔴 icons, web links, and file paths stay as they are.
 
@@ -8,6 +8,7 @@ Plain-words rules for the whole report:
 
 - No unexplained technical terms. When a real name is unavoidable (a program they must have, an account they must create), say what it is in everyday words in the same sentence.
 - Describe benefits and drawbacks from the experience standpoint, never the technology standpoint: not "a self-hosted web service with persistent state" but "it runs on your own computer, remembers your past work, and your data never leaves your machine."
+- Do not use internal artifact or architecture labels as explanations. Terms such as "evidence ledger," "contradiction map," "citation audit," "question tree," "orchestration," and "multi-agent" tell a newcomer nothing by themselves; say what the user sees the tool do instead: "it keeps a list showing which source supports each claim" or "it gives the same question to several independent researchers, then compares their answers." If a real name must appear, explain it immediately in the same sentence.
 - No audit bookkeeping ever appears in the report: no commit hashes, resolution chains, snapshot or worktree state, symlink notes, file or line counts, and no lists of what was or wasn't read. All of that goes to the deep-dive notes.
 - No numeric scores and no rubric axis names — the rubric is reasoning, never output.
 
@@ -24,9 +25,9 @@ The verdict block is three to five short sentences in total, plain enough to rea
 For 🟢, use this exact information order:
 
 1. First sentence: name the distinctive mechanism and the result it produces.
-2. Second sentence: explain the input → transformation → output in everyday words.
-3. Third sentence: say what this lets the user do better, faster, or more easily.
-4. Final sentence: say whether it runs on their machine. When only part is worth having, say what part is being set up and what is left out.
+2. Second sentence: explain why that mechanism produces a better result than the obvious alternative.
+3. Third sentence: name the concrete situation where the user would reach for it.
+4. Final sentence: say whether it runs on their machine. When only part is worth having, name the installed part, what the rest of the repository contains, and why those other parts are not needed.
 
 Passing an audit gate is not a user benefit and never belongs in a green opening. Mention a failed gate only when it causes a red verdict.
 
@@ -36,11 +37,20 @@ That last case — trigger 8, Unverifiable — is the one red that is about miss
 
 ## What it is
 
-Two or three sentences: what it does in everyday words, anchored to something familiar when that helps ("like the research mode in ChatGPT, but it runs on your own computer and shows its sources"). Then how it works at a high level in at most two plain sentences, hiding the machinery ("you type a question; it goes off and reads the web for a while, then hands you a written report"). No component names, no data-flow chains, no diagrams.
+Two to four sentences: what the user gives it, what comes back, and when the user would choose it over doing the job normally. Describe the target itself, not its ancestry or implementation trivia. Do not tell the reader that it imitates, replaces, or omits another project unless that fact changes what they can do, what they must install, or what they must pay.
+
+## How it works — step by step
+
+Write 10–15 numbered steps. Trace one real use from the user's request to the finished result. Every step contains two things in plain language:
+
+1. **What happens:** who or what does an observable action.
+2. **Why it helps:** why that step improves the result, catches a mistake, saves work, or makes the outcome easier to trust.
+
+Use the form: `<plain action> — <why that step improves the result>`. Do not use a stage name as its own explanation. For a simple target, explain each step more concretely. For a complex target, combine low-level actions into larger stages while preserving the full input-to-result chain. Base the steps on the files that implement the mechanism, not the README's feature list.
 
 ## Why you'd want it
 
-Two to four short bullets: what gets easier, faster, better, or cheaper, and what makes this one special against the obvious alternative. Experience first, always — "you can close the laptop and it keeps working; the answer is waiting when you come back," never "asynchronous task persistence."
+Two to four short bullets. Each bullet states, in order: the ordinary problem, what the target changes, and the practical consequence for the user. A feature count is not a benefit. "It has two checks" says nothing; say what mistake those checks prevent and what happens without them. Compare against the obvious alternative with a concrete difference in the result, time, effort, cost, or failure risk.
 
 ## Watch out for
 
@@ -51,6 +61,7 @@ At most two bullets, and only things that would genuinely change the user's week
 Answer "will this run for me, and how?" with one recommended way — never a menu.
 
 - Whether it runs on this computer: what is already in place, what is missing, and the one-line command or step to get each missing piece with the user's package manager. If probing was impossible (no shell), say so plainly and keep the recommendation generic.
+- Name the exact installation scope and explain why that scope contains everything needed for the recommended use. When installing only one folder from a larger repository, explain what the excluded repository areas are for and why they do not affect the installed target. When the whole repository is required, explain which parts depend on one another. Never state "install only this folder" without the reason.
 - Recommend exactly one way to run it, chosen by the experience rule and the effort rule ([install-playbook.md](install-playbook.md)): the full point-and-click experience whenever one exists, reached in the fewest user steps. When nothing graphical exists, say plainly: "there is no app window — you use this by typing commands."
 - If running it takes several parts working at once, that is plumbing the user should never see: the plan is one start command or start-on-login, ending with one address to open or one icon to click — never terminal windows to keep open.
 - Other documented setups get at most one sentence — "there are other ways to install it meant for developers; you don't need them" — with no list.

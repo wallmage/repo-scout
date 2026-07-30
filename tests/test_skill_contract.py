@@ -352,7 +352,11 @@ class SkillContractTests(unittest.TestCase):
         self.assertIn("🟢 INSTALL or 🔴 SKIP, never a middle option", self.rubric)
         self.assertIn("**Verdict: 🟢 INSTALL | 🔴 SKIP**", self.report)
         # Partial-value cases get a chosen-scope sentence the skill decides itself.
-        self.assertIn("what part is being set up and what is left out", self.report)
+        self.assertIn(
+            "name the installed part, what the rest of the repository contains, "
+            "and why those other parts are not needed",
+            self.report,
+        )
         self.assertIn("never present the reader a menu", self.skill)
         # No-hedging rule and tiebreaker are present on the verdict line.
         self.assertIn(
@@ -502,9 +506,11 @@ class SkillContractTests(unittest.TestCase):
         self.assertIn("The user can override any verdict", self.rubric)
 
     def test_report_is_plain_language_for_nontechnical_readers(self):
-        # The visible report answers five plain questions in four sections.
+        # The visible report explains the product, its mechanism, its value,
+        # and the exact installation scope in plain language.
         for heading in (
             "## What it is",
+            "## How it works — step by step",
             "## Why you'd want it",
             "## Watch out for",
             "## On your machine",
@@ -514,7 +520,6 @@ class SkillContractTests(unittest.TestCase):
         for heading in (
             "## Source and audit coverage",
             "## Compatibility and ownership",
-            "## How it works — the mechanism",
             "## The active ingredients",
             "## The filler",
             "## Best fit",
@@ -523,8 +528,8 @@ class SkillContractTests(unittest.TestCase):
             "## Bottom line",
         ):
             self.assertNotIn(heading, self.report)
-        # Half the old length, verdict as a short plain block, few shortcomings.
-        self.assertIn("half a page", self.report)
+        # The verdict stays short; the mechanism gets enough room to be useful.
+        self.assertIn("one to two pages", self.report)
         self.assertIn("three to five short sentences", self.report)
         self.assertIn("At most two bullets", self.report)
         self.assertIn("experience standpoint", self.report)
@@ -551,6 +556,49 @@ class SkillContractTests(unittest.TestCase):
         )
         self.assertNotIn(
             "it really does what it promises",
+            self.report,
+        )
+
+    def test_visible_report_explains_mechanism_in_ten_to_fifteen_steps(self):
+        for phrase in (
+            "Write 10–15 numbered steps",
+            "what happens",
+            "why that step improves the result",
+            "For a simple target, explain each step more concretely",
+            "For a complex target, combine low-level actions into larger stages",
+        ):
+            self.assertIn(phrase, self.report)
+        self.assertNotIn("how it works in at most two high-level sentences", self.skill)
+        self.assertNotIn("the machinery stays hidden", self.skill)
+
+    def test_value_and_install_scope_answer_so_what(self):
+        for phrase in (
+            "A feature count is not a benefit",
+            "the ordinary problem",
+            "what the target changes",
+            "the practical consequence",
+            "why that scope contains everything needed for the recommended use",
+            "what the excluded repository areas are for",
+            "why they do not affect the installed target",
+        ):
+            self.assertIn(phrase, self.report)
+
+    def test_internal_labels_are_translated_into_plain_actions(self):
+        self.assertIn(
+            "Do not use internal artifact or architecture labels as explanations",
+            self.report,
+        )
+        for term in (
+            "evidence ledger",
+            "contradiction map",
+            "citation audit",
+            "question tree",
+            "orchestration",
+            "multi-agent",
+        ):
+            self.assertIn(term, self.report)
+        self.assertIn(
+            "say what the user sees the tool do instead",
             self.report,
         )
 

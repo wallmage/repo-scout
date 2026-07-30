@@ -293,7 +293,8 @@ class MetadataParserTests(unittest.TestCase):
             for item in result.dependencies
         }
         self.assertIn(("runtime", ">=1", "runtime"), dependencies)
-        self.assertIn(("builder", ">=2", "build"), dependencies)
+        if inventory.tomllib is not None:
+            self.assertIn(("builder", ">=2", "build"), dependencies)
         self.assertIn(("sphinx", ">=7", "optional:docs"), dependencies)
         malformed = inventory.Inventory(root="/tmp/demo")
         inventory._parse_pyproject("[project]\ndependencies = ???", "bad.toml", malformed)
@@ -374,20 +375,24 @@ class MetadataParserTests(unittest.TestCase):
         inventory._parse_web_manifest("[]", "manifest.json", result)
 
         dependencies = {(item.name, item.group) for item in result.dependencies}
-        self.assertTrue(
-            {
-                ("example/one", "runtime"),
-                ("example/two", "runtime"),
-                ("serde", "runtime"),
-                ("reqwest", "runtime"),
-                ("tempfile", "development"),
-                ("cc", "build"),
-            }.issubset(dependencies)
-        )
-        self.assertIn(
-            inventory.EvidenceRecord("runtime", "Cargo.toml", "rust 1.75"),
-            result.compatibility,
-        )
+        expected = {
+            ("example/one", "runtime"),
+            ("example/two", "runtime"),
+        }
+        if inventory.tomllib is not None:
+            expected.update(
+                {
+                    ("serde", "runtime"),
+                    ("reqwest", "runtime"),
+                    ("tempfile", "development"),
+                    ("cc", "build"),
+                }
+            )
+            self.assertIn(
+                inventory.EvidenceRecord("runtime", "Cargo.toml", "rust 1.75"),
+                result.compatibility,
+            )
+        self.assertTrue(expected.issubset(dependencies))
         self.assertIn(
             inventory.ArchetypeHint(
                 "extension manifest", "browser WebExtension manifest", "manifest.json"
@@ -406,10 +411,19 @@ class MetadataParserTests(unittest.TestCase):
 
             result = inventory.scan_repository(root)
 
-            self.assertIn(
-                inventory.EvidenceRecord("runtime", "Cargo.toml", "rust 1.75"),
-                result.compatibility,
-            )
+            if inventory.tomllib is None:
+                self.assertIn(
+                    inventory.SkippedRecord(
+                        "Cargo.toml",
+                        "manifest metadata parse unavailable: tomllib unavailable",
+                    ),
+                    result.skipped,
+                )
+            else:
+                self.assertIn(
+                    inventory.EvidenceRecord("runtime", "Cargo.toml", "rust 1.75"),
+                    result.compatibility,
+                )
 
 
 class ReadBoundaryTests(unittest.TestCase):

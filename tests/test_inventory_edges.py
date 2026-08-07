@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import stat
 import tempfile
+import time
 import unittest
 from unittest import mock
 
@@ -645,6 +646,94 @@ class RepositoryEdgeTests(unittest.TestCase):
             self.assertIn(("deployment file", "Kubernetes manifest"), hints)
             self.assertIn(("deployment file", "Procfile"), hints)
             self.assertIn(("extension manifest", "VS Code extension package.json"), hints)
+
+
+class ResourceBoundTests(unittest.TestCase):
+    def test_repeated_buffer_prefixes_complete_within_five_seconds(self):
+        payload = ("Buffer.from(" * 20_000)[:200_000]
+        with tempfile.TemporaryDirectory() as root_dir:
+            root = Path(root_dir)
+            (root / "hostile.js").write_text(payload)
+
+            started = time.monotonic()
+            inventory.scan_repository(root)
+            elapsed = time.monotonic() - started
+
+        self.assertLess(elapsed, 5.0)
+
+    def test_repeated_git_config_prefixes_complete_within_five_seconds(self):
+        payload = ("git config " * 20_000)[:200_000]
+        with tempfile.TemporaryDirectory() as root_dir:
+            root = Path(root_dir)
+            (root / "hostile.sh").write_text(payload)
+
+            started = time.monotonic()
+            inventory.scan_repository(root)
+            elapsed = time.monotonic() - started
+
+        self.assertLess(elapsed, 5.0)
+
+    def test_large_package_manifest_is_bounded_and_preserves_order(self):
+        declared = {
+            f"dep-{index:05d}": "1" for index in reversed(range(50_000))
+        }
+        with tempfile.TemporaryDirectory() as root_dir:
+            root = Path(root_dir)
+            (root / "package.json").write_text(
+                json.dumps({"dependencies": declared})
+            )
+
+            started = time.monotonic()
+            result = inventory.scan_repository(root)
+            elapsed = time.monotonic() - started
+
+        self.assertLess(elapsed, 5.0)
+        self.assertEqual(
+            sorted(declared),
+            [record.name for record in result.dependencies],
+        )
+
+    def test_manifest_record_cap_is_reported_for_every_record_type(self):
+        with tempfile.TemporaryDirectory() as root_dir:
+            root = Path(root_dir)
+            (root / "package.json").write_text(
+                json.dumps({"engines": {"first": "1", "second": "2", "third": "3"}})
+            )
+
+            with mock.patch.object(inventory, "MAX_MANIFEST_RECORDS", 2):
+                result = inventory.scan_repository(root)
+
+        self.assertEqual(2, len(result.compatibility))
+        self.assertIn(
+            ("package.json", "manifest records truncated after 2 records"),
+            {(record.path, record.reason) for record in result.skipped},
+        )
+
+    def test_duplicate_dependencies_are_collapsed_in_insertion_order(self):
+        result = inventory.Inventory(root="/tmp/example")
+        second = inventory.DependencyRecord("second", "2", "runtime", "package.json")
+        first = inventory.DependencyRecord("first", "1", "runtime", "package.json")
+
+        inventory._append_unique(result.dependencies, second)
+        inventory._append_unique(result.dependencies, first)
+        inventory._append_unique(result.dependencies, second)
+
+        self.assertEqual([second, first], result.dependencies)
+
+    def test_overlong_line_is_truncated_and_recorded(self):
+        with tempfile.TemporaryDirectory() as root_dir:
+            root = Path(root_dir)
+            (root / "hostile.js").write_text(
+                "x" * 4096 + "requests.get('https://example.invalid')"
+            )
+
+            result = inventory.scan_repository(root)
+
+        self.assertFalse(any(record.path == "hostile.js" for record in result.findings))
+        self.assertIn(
+            ("hostile.js", "line 1 truncated after 4096 characters"),
+            {(record.path, record.reason) for record in result.skipped},
+        )
 
 
 class RenderingAndCliTests(unittest.TestCase):

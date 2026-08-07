@@ -25,6 +25,8 @@ except ImportError:  # Python 3.9 and 3.10
 
 
 DEFAULT_MAX_FILE_BYTES = 2 * 1024 * 1024
+MAX_SCANNABLE_LINE_CHARS = 4096
+MAX_MANIFEST_RECORDS = 50_000
 LOSSY_DECODE_REASON = "undecodable UTF-8 (scanned via lossy decode)"
 REPARSE_POINT_ATTRIBUTE = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x0400)
 SECURE_RELATIVE_OPEN_SUPPORTED = (
@@ -190,6 +192,32 @@ class RepositoryScale:
     tier: str = "Small"
 
 
+class _UniqueList(list):
+    """Preserve insertion order while deduplicating hashable records in O(1)."""
+
+    def __init__(self, values: Iterable[Any] = ()) -> None:
+        super().__init__()
+        self._seen = set()
+        self.extend(values)
+
+    def append_unique(self, item: Any) -> bool:
+        if item in self._seen:
+            return False
+        self._seen.add(item)
+        super().append(item)
+        return True
+
+    def __contains__(self, item: Any) -> bool:
+        return item in self._seen
+
+    def append(self, item: Any) -> None:
+        self.append_unique(item)
+
+    def extend(self, values: Iterable[Any]) -> None:
+        for item in values:
+            self.append_unique(item)
+
+
 @dataclass(frozen=True)
 class _ComponentSnapshot:
     """Identity fields used to detect fallback-path changes before reading."""
@@ -210,14 +238,14 @@ class Inventory:
     scripts: List[FileRecord] = field(default_factory=list)
     executables: List[FileRecord] = field(default_factory=list)
     documents: List[FileRecord] = field(default_factory=list)
-    skipped: List[SkippedRecord] = field(default_factory=list)
+    skipped: List[SkippedRecord] = field(default_factory=_UniqueList)
     findings: List[Finding] = field(default_factory=list)
-    integration_paths: List[EvidenceRecord] = field(default_factory=list)
-    manifests: List[EvidenceRecord] = field(default_factory=list)
-    dependencies: List[DependencyRecord] = field(default_factory=list)
-    compatibility: List[EvidenceRecord] = field(default_factory=list)
-    install_surfaces: List[EvidenceRecord] = field(default_factory=list)
-    archetype_hints: List[ArchetypeHint] = field(default_factory=list)
+    integration_paths: List[EvidenceRecord] = field(default_factory=_UniqueList)
+    manifests: List[EvidenceRecord] = field(default_factory=_UniqueList)
+    dependencies: List[DependencyRecord] = field(default_factory=_UniqueList)
+    compatibility: List[EvidenceRecord] = field(default_factory=_UniqueList)
+    install_surfaces: List[EvidenceRecord] = field(default_factory=_UniqueList)
+    archetype_hints: List[ArchetypeHint] = field(default_factory=_UniqueList)
     scale: RepositoryScale = field(default_factory=RepositoryScale)
 
 
@@ -232,7 +260,7 @@ BEHAVIOR_PATTERNS: List[Tuple[str, Pattern[str]]] = [
     (
         "obfuscation",
         re.compile(
-            r"\bbase64\s+(-d|--decode)\b|base64\.b64decode\s*\(|\batob\s*\(|String\.fromCharCode\s*\(|bytes\.fromhex\s*\(|exec\s*\(\s*compile\s*\(|Buffer\.from\s*\([^\n]*['\"]base64['\"]",
+            r"\bbase64\s+(-d|--decode)\b|base64\.b64decode\s*\(|\batob\s*\(|String\.fromCharCode\s*\(|bytes\.fromhex\s*\(|exec\s*\(\s*compile\s*\(|Buffer\.from\s*\([^\n]{0,200}?['\"]base64['\"]",
             re.IGNORECASE,
         ),
     ),
@@ -253,7 +281,7 @@ BEHAVIOR_PATTERNS: List[Tuple[str, Pattern[str]]] = [
     (
         "persistence/hooks",
         re.compile(
-            r"^\s*(crontab|launchctl)\b|^\s*systemctl\s+enable\b|git\s+config\s+[^\n]*core\.hooksPath|^\s*(cp|mv|tee|ln)\b[^\n]*(\.bashrc|\.zshrc|/LaunchAgents/|/LaunchDaemons/)",
+            r"^\s*(crontab|launchctl)\b|^\s*systemctl\s+enable\b|git\s+config\s+[^\n]{0,200}?core\.hooksPath|^\s*(cp|mv|tee|ln)\b[^\n]*(\.bashrc|\.zshrc|/LaunchAgents/|/LaunchDaemons/)",
             re.IGNORECASE,
         ),
     ),
@@ -350,9 +378,37 @@ def parse_frontmatter(text: str) -> Tuple[Optional[str], Optional[str]]:
     return values.get("name"), values.get("description")
 
 
-def _append_unique(collection: List[Any], item: Any) -> None:
+def _append_unique(collection: List[Any], item: Any) -> bool:
+    if isinstance(collection, _UniqueList):
+        return collection.append_unique(item)
     if item not in collection:
         collection.append(item)
+        return True
+    return False
+
+
+class _ManifestRecordBudget:
+    def __init__(self, result: Inventory, path: str) -> None:
+        self.result = result
+        self.path = path
+        self.retained = 0
+
+    def append(self, collection: List[Any], item: Any) -> bool:
+        if item in collection:
+            return False
+        if self.retained >= MAX_MANIFEST_RECORDS:
+            _append_unique(
+                self.result.skipped,
+                SkippedRecord(
+                    self.path,
+                    f"manifest records truncated after {MAX_MANIFEST_RECORDS} records",
+                ),
+            )
+            return False
+        if _append_unique(collection, item):
+            self.retained += 1
+            return True
+        return False
 
 
 def _record_manifest_parse_failure(
@@ -518,6 +574,7 @@ def _parse_package_json(text: str, rel: str, result: Inventory) -> None:
         _record_manifest_parse_failure(result, rel, "invalid JSON object")
         return
 
+    budget = _ManifestRecordBudget(result, rel)
     scripts = data.get("scripts", {})
     if isinstance(scripts, dict):
         scripts_match = re.search(r'"scripts"\s*:', text)
@@ -531,7 +588,7 @@ def _parse_package_json(text: str, rel: str, result: Inventory) -> None:
             )
             key_start = scripts_start + key_match.start() if key_match else 0
             line = text.count("\n", 0, key_start) + 1 if key_match else 0
-            _append_unique(
+            budget.append(
                 result.install_surfaces,
                 EvidenceRecord(
                     "package lifecycle script",
@@ -553,7 +610,7 @@ def _parse_package_json(text: str, rel: str, result: Inventory) -> None:
         declared = data.get(field_name, {})
         if isinstance(declared, dict):
             for name, specification in declared.items():
-                _append_unique(
+                budget.append(
                     result.dependencies,
                     DependencyRecord(str(name), str(specification), group, rel),
                 )
@@ -561,7 +618,7 @@ def _parse_package_json(text: str, rel: str, result: Inventory) -> None:
     engines = data.get("engines", {})
     if isinstance(engines, dict):
         for name, constraint in engines.items():
-            _append_unique(
+            budget.append(
                 result.compatibility,
                 EvidenceRecord("runtime", rel, f"{name} {constraint}"),
             )
@@ -571,19 +628,19 @@ def _parse_package_json(text: str, rel: str, result: Inventory) -> None:
             values = [values]
         if isinstance(values, list):
             for value in values:
-                _append_unique(
+                budget.append(
                     result.compatibility,
                     EvidenceRecord(category, rel, str(value)),
                 )
 
     bin_value = data.get("bin")
     if isinstance(bin_value, (str, dict)) and bin_value:
-        _append_unique(
+        budget.append(
             result.archetype_hints,
             ArchetypeHint("package entry point", "bin declared", rel),
         )
     if "contributes" in data or (isinstance(engines, dict) and "vscode" in engines):
-        _append_unique(
+        budget.append(
             result.archetype_hints,
             ArchetypeHint("extension manifest", "VS Code extension package.json", rel),
         )
@@ -649,10 +706,11 @@ def _parse_pyproject(text: str, rel: str, result: Inventory) -> None:
     if not isinstance(project, dict):
         project = {}
 
+    budget = _ManifestRecordBudget(result, rel)
     for requirement in project.get("dependencies", []) or []:
         dependency = _dependency_from_requirement(str(requirement), "runtime", rel)
         if dependency:
-            _append_unique(result.dependencies, dependency)
+            budget.append(result.dependencies, dependency)
     optional = project.get("optional-dependencies", {}) or {}
     if isinstance(optional, dict):
         for group, requirements in optional.items():
@@ -662,11 +720,11 @@ def _parse_pyproject(text: str, rel: str, result: Inventory) -> None:
                         str(requirement), f"optional:{group}", rel
                     )
                     if dependency:
-                        _append_unique(result.dependencies, dependency)
+                        budget.append(result.dependencies, dependency)
 
     requires_python = project.get("requires-python")
     if requires_python:
-        _append_unique(
+        budget.append(
             result.compatibility,
             EvidenceRecord("runtime", rel, f"python {requires_python}"),
         )
@@ -675,32 +733,34 @@ def _parse_pyproject(text: str, rel: str, result: Inventory) -> None:
         for requirement in build_system.get("requires", []) or []:
             dependency = _dependency_from_requirement(str(requirement), "build", rel)
             if dependency:
-                _append_unique(result.dependencies, dependency)
+                budget.append(result.dependencies, dependency)
 
     if re.search(r"(?m)^\s*\[project\.scripts\]", text) or re.search(
         r"(?m)^\s*\[project\.entry-points", text
     ):
-        _append_unique(
+        budget.append(
             result.archetype_hints,
             ArchetypeHint("package entry point", "project.scripts declared", rel),
         )
 
 
 def _parse_requirements(text: str, rel: str, result: Inventory) -> None:
+    budget = _ManifestRecordBudget(result, rel)
     for line in text.splitlines():
         dependency = _dependency_from_requirement(line, "runtime", rel)
         if dependency:
-            _append_unique(result.dependencies, dependency)
+            budget.append(result.dependencies, dependency)
 
 
 def _parse_go_mod(text: str, rel: str, result: Inventory) -> None:
     in_require_block = False
+    budget = _ManifestRecordBudget(result, rel)
     for raw_line in text.splitlines():
         line = raw_line.strip()
         if not line or line.startswith("//"):
             continue
         if line.startswith("go "):
-            _append_unique(
+            budget.append(
                 result.compatibility,
                 EvidenceRecord("runtime", rel, line),
             )
@@ -715,7 +775,7 @@ def _parse_go_mod(text: str, rel: str, result: Inventory) -> None:
         requirement = requirement.split("//", 1)[0].strip()
         parts = requirement.split()
         if len(parts) >= 2:
-            _append_unique(
+            budget.append(
                 result.dependencies,
                 DependencyRecord(parts[0], parts[1], "runtime", rel),
             )
@@ -736,9 +796,10 @@ def _parse_cargo_toml(text: str, rel: str, result: Inventory) -> None:
         _record_manifest_parse_failure(result, rel, "invalid TOML")
         return
     package = data.get("package", {}) if isinstance(data, dict) else {}
+    budget = _ManifestRecordBudget(result, rel)
     if isinstance(package, dict):
         if package.get("rust-version"):
-            _append_unique(
+            budget.append(
                 result.compatibility,
                 EvidenceRecord("runtime", rel, f"rust {package['rust-version']}"),
             )
@@ -751,7 +812,7 @@ def _parse_cargo_toml(text: str, rel: str, result: Inventory) -> None:
         if isinstance(dependencies, dict):
             for name, value in dependencies.items():
                 specification = value if isinstance(value, str) else json.dumps(value, sort_keys=True)
-                _append_unique(
+                budget.append(
                     result.dependencies,
                     DependencyRecord(str(name), str(specification), group, rel),
                 )
@@ -768,7 +829,7 @@ def _parse_web_manifest(text: str, rel: str, result: Inventory) -> None:
         _record_manifest_parse_failure(result, rel, "invalid JSON object")
         return
     if "manifest_version" in data:
-        _append_unique(
+        _ManifestRecordBudget(result, rel).append(
             result.archetype_hints,
             ArchetypeHint("extension manifest", "browser WebExtension manifest", rel),
         )
@@ -811,6 +872,7 @@ def _iter_scannable_lines(
     )
     in_fence = False
     for line_number, line in enumerate(text.splitlines(), 1):
+        line = line[:MAX_SCANNABLE_LINE_CHARS]
         stripped = line.strip()
         if source_kind == "documentation" and stripped.startswith(("```", "~~~")):
             in_fence = not in_fence
@@ -822,6 +884,20 @@ def _iter_scannable_lines(
             source_kind,
             source_kind != "documentation" or in_fence or indented_code,
         )
+
+
+def _record_line_truncations(
+    result: Inventory, record: FileRecord, text: str
+) -> None:
+    for line_number, line in enumerate(text.splitlines(), 1):
+        if len(line) > MAX_SCANNABLE_LINE_CHARS:
+            _append_unique(
+                result.skipped,
+                SkippedRecord(
+                    record.path,
+                    f"line {line_number} truncated after {MAX_SCANNABLE_LINE_CHARS} characters",
+                ),
+            )
 
 
 def _scan_install_surfaces(record: FileRecord, text: str) -> List[EvidenceRecord]:
@@ -1444,6 +1520,7 @@ def scan_repository(root: Path, max_file_bytes: int = DEFAULT_MAX_FILE_BYTES) ->
                     result.scripts.append(record)
                 if is_manifest and not lossy_decode:
                     _parse_manifest(record, text, result)
+                _record_line_truncations(result, record, text)
                 if not lossy_decode:
                     result.install_surfaces.extend(_scan_install_surfaces(record, text))
                 result.findings.extend(

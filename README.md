@@ -25,7 +25,7 @@ You paste a link — a repo URL on any git host, a project website, or a package
 
 ### The pre-install gate
 
-Ask it to **install** something and it reads first, installs second. Inspection never installs or executes target code. After 🟢 it installs exactly the scope it chose — the whole thing or a named subset — and returns to the installation workflow you authorized; after 🔴 it explains why with file:line evidence — and the final call is still yours: say install anyway, and it proceeds.
+Invoke **Repo Scout** to install something and it reads first, installs second. Inspection never installs or executes target code. After 🟢 it installs exactly the scope it chose — the whole thing or a named subset — and returns to the installation workflow you authorized; after 🔴 it explains why with file:line evidence — and the final call is still yours: say install anyway, and it proceeds.
 
 Real test — a repo advertising *"50+ skills, 21k stars, replaces a $2M consulting team"*, asked (in Chinese) to install it urgently:
 
@@ -96,19 +96,19 @@ trap - 0 1 2 15
 ### Use it
 
 ```
-Is this worth installing? https://github.com/someone/some-skill-pack
+$repo-scout Is this worth installing? https://github.com/someone/some-skill-pack
 ```
 ```
-Is this worth deploying? https://deerflow.tech
+$repo-scout Is this worth deploying? https://deerflow.tech
 ```
 ```
-thoughts? https://github.com/someone/some-cli-tool
+$repo-scout thoughts? https://github.com/someone/some-cli-tool
 ```
 ```
-Which of these five is best? <link> <link> <link> <link> <link>
+$repo-scout Which of these five is best? <link> <link> <link> <link> <link>
 ```
 ```
-Install this for me: https://github.com/someone/viral-skill   ← gets vetted first
+$repo-scout Install this for me: https://github.com/someone/viral-skill   ← gets vetted first
 ```
 
 ---
@@ -202,19 +202,19 @@ trap - 0 1 2 15
 ### 可以这样问
 
 ```
-这个值得装吗? https://github.com/someone/some-skill-pack
+$repo-scout 这个值得装吗? https://github.com/someone/some-skill-pack
 ```
 ```
-这个值得部署吗? https://deerflow.tech
+$repo-scout 这个值得部署吗? https://deerflow.tech
 ```
 ```
-帮我看看这个 https://github.com/someone/some-cli-tool
+$repo-scout 帮我看看这个 https://github.com/someone/some-cli-tool
 ```
 ```
-这五个哪个最好? <链接> <链接> <链接> <链接> <链接>
+$repo-scout 这五个哪个最好? <链接> <链接> <链接> <链接> <链接>
 ```
 ```
-帮我装这个: https://github.com/someone/viral-skill   ← 会先被审查
+$repo-scout 帮我装这个: https://github.com/someone/viral-skill   ← 会先被审查
 ```
 
 ---

@@ -123,7 +123,7 @@
 </div>
 
 <h2>The pre-install gate</h2>
-<p>Ask it to <b>install</b> or adopt something and it reads first, installs second. Inspection never installs or executes target code. After 🟢 it installs the scope it chose for you and returns to the workflow you authorized; after 🔴 it explains why with <code>file:line</code> evidence. The final call is still yours.</p>
+<p>Invoke <b>Repo Scout</b> to install or adopt something and it reads first, installs second. Inspection never installs or executes target code. After 🟢 it installs the scope it chose for you and returns to the workflow you authorized; after 🔴 it explains why with <code>file:line</code> evidence. The final call is still yours.</p>
 <p>A real test — a repo advertising <em>"50+ skills, 21k stars, replaces a $2M consulting team"</em>, asked in Chinese to install it urgently:</p>
 <blockquote>
   <p><b>结论：🔴 SKIP（不要安装）</b> — 它的安装脚本会把你的全部环境变量偷偷打包上传到作者的服务器…</p>
@@ -177,15 +177,15 @@ trap - 0 1 2 15
 <p><b>Gemini CLI and other Agent Skills tools</b> — see <code>INSTALL.md</code> for native project and personal discovery paths.</p>
 
 <h2>Then just ask</h2>
-<pre><code>Is this worth installing? https://github.com/someone/some-skill-pack
+<pre><code>$repo-scout Is this worth installing? https://github.com/someone/some-skill-pack
 
-Is this worth deploying? https://deerflow.tech
+$repo-scout Is this worth deploying? https://deerflow.tech
 
-thoughts? https://github.com/someone/some-cli-tool
+$repo-scout thoughts? https://github.com/someone/some-cli-tool
 
-Which of these five is best? &lt;link&gt; &lt;link&gt; &lt;link&gt; &lt;link&gt; &lt;link&gt;
+$repo-scout Which of these five is best? &lt;link&gt; &lt;link&gt; &lt;link&gt; &lt;link&gt; &lt;link&gt;
 
-Install this for me: https://github.com/someone/viral-skill   ← gets vetted first</code></pre>
+$repo-scout Install this for me: https://github.com/someone/viral-skill   ← gets vetted first</code></pre>
 <p>Ask in any language and the whole verdict comes back in that language.</p>
 
 <p style="margin-top:36px">
@@ -271,15 +271,15 @@ trap - 0 1 2 15
 <p><b>Gemini CLI 及其他支持 Agent Skills 的工具</b>：见 <code>INSTALL.md</code>，装到各工具自己的个人或项目 skill 目录即可。</p>
 
 <h2>直接这样问</h2>
-<pre><code>这个值得装吗? https://github.com/someone/some-skill-pack
+<pre><code>$repo-scout 这个值得装吗? https://github.com/someone/some-skill-pack
 
-这个值得部署吗? https://deerflow.tech
+$repo-scout 这个值得部署吗? https://deerflow.tech
 
-帮我看看这个 https://github.com/someone/some-cli-tool
+$repo-scout 帮我看看这个 https://github.com/someone/some-cli-tool
 
-这五个哪个最好? &lt;链接&gt; &lt;链接&gt; &lt;链接&gt; &lt;链接&gt; &lt;链接&gt;
+$repo-scout 这五个哪个最好? &lt;链接&gt; &lt;链接&gt; &lt;链接&gt; &lt;链接&gt; &lt;链接&gt;
 
-帮我装这个: https://github.com/someone/viral-skill   ← 会先被审查</code></pre>
+$repo-scout 帮我装这个: https://github.com/someone/viral-skill   ← 会先被审查</code></pre>
 <p>你用什么语言问，整份结论就用什么语言答。</p>
 
 <p style="margin-top:36px">

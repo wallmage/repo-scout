@@ -17,7 +17,7 @@ class SkillContractTests(unittest.TestCase):
         self.rubric = (SKILL_DIR / "references" / "rubric.md").read_text()
         self.playbook = (SKILL_DIR / "references" / "install-playbook.md").read_text()
 
-    def test_description_is_short_and_trigger_focused(self):
+    def test_description_requires_explicit_invocation(self):
         frontmatter = re.match(r"\A---\n(.*?)\n---", self.skill, re.DOTALL)
         self.assertIsNotNone(frontmatter)
         description_match = re.search(
@@ -27,26 +27,20 @@ class SkillContractTests(unittest.TestCase):
         )
         self.assertIsNotNone(description_match)
         description = description_match.group(1)
-        self.assertTrue(description.startswith("Use when"))
+        self.assertTrue(description.startswith("Audit an open-source repository"))
         self.assertLessEqual(len(description), 500)
         for cue in (
-            "is this worth installing?",
-            "is this worth adopting?",
-            "thoughts?",
-            "repository URL",
-            "comparison",
-            "install this",
+            "Use only when",
+            "$repo-scout",
+            "explicitly names Repo Scout",
+            "Never auto-trigger",
+            "repository URLs",
+            "installation requests",
             "/plugin install",
-            "curl ... | sh",
-            "any Git host",
-            "project website",
-            "package-registry page",
+            "shell commands",
         ):
             self.assertIn(cue, description)
-        self.assertIn(
-            "Always run Repo Scout before every skill or plugin installation",
-            description,
-        )
+        self.assertNotIn("Always run Repo Scout", description)
         for workflow_summary in (
             "evidence-based read-only audit",
             "INSTALL / CHERRY-PICK / SKIP verdict",

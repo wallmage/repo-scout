@@ -60,7 +60,7 @@ Project-only alternative:
 <project>/.agents/skills/repo-scout/SKILL.md
 ```
 
-Invoke it explicitly with `$repo-scout`, or let Codex select it from the description. Codex normally detects skill changes automatically; restart if it does not appear. `agents/openai.yaml` supplies desktop UI metadata.
+Invoke it explicitly with `$repo-scout` or by naming Repo Scout and asking to use it. It is intentionally never selected automatically. Codex normally detects skill changes automatically; restart if it does not appear. `agents/openai.yaml` supplies desktop UI metadata.
 
 ## Gemini CLI
 
@@ -105,7 +105,7 @@ Without filesystem and source-access tools, also provide the target repository f
 Ask:
 
 ```text
-Use repo-scout to audit https://github.com/example/example-skill before I install it.
+Use $repo-scout to audit https://github.com/example/example-skill before I install it.
 ```
 
 The response should:
